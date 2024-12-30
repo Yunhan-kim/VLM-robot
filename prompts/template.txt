@@ -12,8 +12,7 @@ You are an AI robot designed to create action plans for solving tasks in a table
    - This area should be considered when placing objects into the basket.
 
 3. **Objects on the Table**:
-   {domain_desc}   
-   - All objects are outside the basket's boundaries.
+{domain_desc}   - All objects are outside the basket's boundaries.
 
 4. **Robot Actions**:
    - **pick([obj], {})**: Pick up the specified object.
