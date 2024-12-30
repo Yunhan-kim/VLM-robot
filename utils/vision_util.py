@@ -100,7 +100,7 @@ class VisionBase:
         obb_pred = []
         for i in range(masks.shape[0]):
             obb = self.get_oriented_bounding_box(masks[i][0])
-            obb_pred.append([phrases[i], logits[i], boxes[i], obb])            
+            obb_pred.append([phrases[i], logits[i].tolist(), boxes_xyxy[i].tolist(), obb])
 
         return obb_pred
         
