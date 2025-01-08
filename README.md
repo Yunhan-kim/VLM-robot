@@ -21,7 +21,7 @@ First, create a folder `gemini_keys` under the project directory; Second, create
 
 ```bash
 {
-    "key": "",    
+    "key": ""   
 }
 ```
 
