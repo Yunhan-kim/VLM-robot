@@ -3,12 +3,8 @@ import cv2
 import numpy as np
 from pathlib import Path
 
-from GroundingDINO.groundingdino.models import build_model
-from GroundingDINO.groundingdino.util import box_ops
-from GroundingDINO.groundingdino.util.slconfig import SLConfig
-from GroundingDINO.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
-from GroundingDINO.groundingdino.util.inference import annotate, load_image, predict
-from huggingface_hub import hf_hub_download
+from groundingdino.util.inference import load_model, load_image, predict
+from groundingdino.util import box_ops
 
 from segment_anything.segment_anything import build_sam, SamPredictor
 
@@ -16,29 +12,15 @@ from segment_anything.segment_anything import build_sam, SamPredictor
 class VisionBase:
     def __init__(self, device = 'cpu'):
         self.device = device
-        self.groundingdino_model = self.load_model_hf()
-        self.sam_predictor = self.load_sam()
+        self.groundingdino_model = self.load_groundingdino()
+        self.sam_predictor = self.load_sam()    
 
-    def _load_model_hf(self, repo_id, filename, ckpt_config_filename):
-        cache_config_file = hf_hub_download(repo_id=repo_id, filename=ckpt_config_filename)
-
-        args = SLConfig.fromfile(cache_config_file) 
-        model = build_model(args)
-        args.device = self.device
-
-        cache_file = hf_hub_download(repo_id=repo_id, filename=filename)
-        checkpoint = torch.load(cache_file, map_location='cpu')
-        log = model.load_state_dict(clean_state_dict(checkpoint['model']), strict=False)
-        print("Model loaded from {} \n => {}".format(cache_file, log))
-        _ = model.eval()
+    def load_groundingdino(self):
+        groundingdino_folder = Path(__file__).resolve().parent.parent / "checkpoints"    
+        groundingdino_checkpoint = groundingdino_folder / "groundingdino_swinb_cogcoor.pth"
+        groundingdino_cfg = groundingdino_folder / "GroundingDINO_SwinB_cfg.py"
+        model = load_model(groundingdino_cfg, groundingdino_checkpoint)        
         return model
-    
-    def load_model_hf(self):
-        ckpt_repo_id = "ShilongLiu/GroundingDINO"
-        ckpt_filenmae = "groundingdino_swinb_cogcoor.pth"
-        ckpt_config_filename = "GroundingDINO_SwinB.cfg.py"
-        groundingdino_model = self._load_model_hf(ckpt_repo_id, ckpt_filenmae, ckpt_config_filename)
-        return groundingdino_model
     
     def load_sam(self):
         sam_folder = Path(__file__).resolve().parent.parent / "checkpoints"    
