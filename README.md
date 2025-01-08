@@ -1,7 +1,7 @@
 # VLM-Robot
 ## Prerequisite
 
-### Step 1: Download the pretrained weights
+### Step 1: Obtain API keys to use large language models
 
 **OpenAI**
 
