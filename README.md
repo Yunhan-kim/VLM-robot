@@ -32,6 +32,7 @@
 1. **Create the `gemini_keys` Folder:**
    - Navigate to your project directory and create a folder named `gemini_keys`.
 
+<<<<<<< HEAD
 2. **Create the `gemini_keys.json` File:**
    - Inside the `gemini_keys` folder, create a file named `gemini_keys.json`.
 
@@ -51,6 +52,13 @@
 ### Step 2: Download the Pretrained Weights
 
 In this step, you'll download the pretrained weights for the Grounding DINO model to initialize it properly.
+=======
+```bash
+{
+    "key": ""   
+}
+```
+>>>>>>> 91ea349... Update README.md
 
 **Files to Download:**
 
