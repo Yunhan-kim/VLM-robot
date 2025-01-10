@@ -45,7 +45,7 @@ class VLMPlanner(LLMBase):
         return domain_desc            
 
     def calibration(self, img_point: list, z = 470.0): # # 원하는 월드 좌표의 z값 (평면인 경우 고정, mm)
-        cal_path = 'assets/camera_calibration.yaml'
+        cal_path = 'utils/camera_calibration.yaml'
         assert os.path.exists(cal_path), f"File does not exist: {cal_path}"
 
         with open(cal_path, "r") as file:
