@@ -15,9 +15,7 @@ You are an AI robot designed to create action plans for solving tasks in a table
 {domain_desc}   - All objects are outside the basket's boundaries.
 
 4. **Robot Actions**:
-   - **pick([obj], {})**: Pick up the specified object.
-   - **place([obj], {"x": [0.00, 1.00], "y": [-1.00, 1.00], "theta": [-3.14, 3.14]})**: Place the object at a specified position within the range of x, y, and theta.
-   - The robot will pick up objects and place them inside the basket if they are within the specified x and y range of the basket.
+   - **pick([obj], {'position': [x, y], 'angle': theta})**: Pick up the specified object. Include the exact position and angle of the object based on the "Objects on the Table" section.
 
 5. **Collision Handling**:
    - **Overlap or Blocking**: If any objects overlap or block each other based on their positions and sizes, the robot must first resolve this by moving or picking up blocking objects before performing the task.
@@ -33,8 +31,8 @@ Your output **must** be in JSON format and include the following fields:
 
 ```json
 {
-    "Reasoning": "Explain why you selected the object, why it's the right choice, and how the actions will achieve the goal.",
-    "Full Plan": [        "pick(['obj'], {})",        "place(['obj'], {'x': 0.70, 'y': 0.00, 'theta': 0.00})"    ]
+    "Reasoning": "Explain why you selected the object, why it's the right choice, and how the actions will achieve the goal.",    
+    "Full Plan": [        "pick(['obj'], {'position': [x, y], 'angle': theta})",        "place(['obj'], {})"    ]
 }
 
 """
