@@ -61,12 +61,12 @@ In this step, you'll download the pretrained weights for the Grounding DINO mode
 **Download Instructions:**
 
 1. **Create the Checkpoints Directory:**
-   - ```bash
-     mkdir -p checkpoints
-     ```
+   ```bash
+   mkdir -p checkpoints
+   ```
 
 2. **Download the Weight Files:**
-   - ```bash
+    ```bash
      cd checkpoints
 
      wget https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth
