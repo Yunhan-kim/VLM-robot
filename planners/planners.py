@@ -35,16 +35,17 @@ class VLMPlanner(LLMBase):
         domain_desc = ''
         for i in range(len(env_desc)):
             target_obj = env_desc[i][0]
-            target_obb = env_desc[i][3]
-            target_obb_cal = self.calibration(list(target_obb[0][0]))
+            target_obb = env_desc[i][3]            
+            target_obb_cal = self.calibration(list(target_obb[0][0]), z = 530.0)  # **** z (mm): 캘리브레이션 할 때마다 확인 **** #
             target_size = target_obb[0][1]
             target_angle = target_obb[0][2]            
             if target_size[0] >= target_size[1]:
                 target_angle = -(90 - target_angle)
+            target_angle = target_angle - 135 # **** Ready pose에서의 그리퍼 회전 각도 확인 **** #
             domain_desc += '   - **{}**: Position {} (x, y), Angle {}\n'.format(target_obj, str(target_obb_cal[0:2].tolist()), target_angle)
         return domain_desc            
 
-    def calibration(self, img_point: list, z = 470.0): # # 원하는 월드 좌표의 z값 (평면인 경우 고정, mm)
+    def calibration(self, img_point: list, z = 470.0): # 원하는 월드 좌표의 z값 (평면인 경우 고정, mm)
         cal_path = 'utils/camera_calibration.yaml'
         assert os.path.exists(cal_path), f"File does not exist: {cal_path}"
 
@@ -82,8 +83,9 @@ class VLMPlanner(LLMBase):
 
         obj_points_3D = np.array(obj_points_3D)
 
-        # 4. 로봇 베이스 기준 좌표 이동
-        obj_target = (np.array([[0, 1, 0],[1, 0, 0],[0 ,0, 1]]) @ (obj_points_3D - np.array([120,180,0]) - np.array([200,200,0])).T).T
+        # 4. 로봇 베이스 기준 좌표 이동 # **** 캘리브레이션 할 때마다 확인 **** #
+        # obj_target = (np.array([[0, 1, 0],[1, 0, 0],[0 ,0, 1]]) @ (obj_points_3D - np.array([320,380,0])).T).T
+        obj_target = (np.array([[0, 1, 0],[1, 0, 0],[0 ,0, 1]]) @ (obj_points_3D - np.array([410,300,0])).T).T
         obj_target = obj_target[0] / 1000 # (mm) -> (m)
         
         return obj_target
