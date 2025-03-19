@@ -5,7 +5,7 @@ huggingface_hub
 matplotlib
 numpy
 onnxruntime
-opencv_python
+
 Pillow
 pycocotools
 PyYAML
@@ -14,10 +14,21 @@ setuptools
 supervision
 termcolor
 timm
-torch
-torchvision
-transformers
+
+transformers==4.47.1
 yapf
 nltk
 fairscale
 litellm
+
+opencv-python
+inference==0.32.0
+openai-clip
+ultralytics
+
+streamlit
+groundingdino-py
+
+google-generativeai
+
+# pip install torch==2.1.0 torchvision==0.16.0 torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cu121
