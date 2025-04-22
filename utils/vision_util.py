@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import time
 import torch
 import cv2
 import numpy as np
@@ -63,10 +64,9 @@ class GroundingDINO_Vision(VisionBase):
         model = load_model(groundingdino_cfg, groundingdino_checkpoint)        
         return model        
     
-    def obb_predict(self, image_path, text_prompt, box_threshold = 0.4, text_threshold = 0.5):
-        import time
-        start = time.time()
+    def obb_predict(self, image_path, text_prompt, box_threshold = 0.4, text_threshold = 0.5):                
         # bounding box
+        start = time.time()
         image_source, image = load_image(image_path)
         boxes, logits, phrases = predict(
             model = self.groundingdino_model, 
@@ -76,8 +76,10 @@ class GroundingDINO_Vision(VisionBase):
             text_threshold = text_threshold,
             device = self.device
             )
-        print("time :", time.time() - start)
+        print("Object detection time(s) :", time.time() - start)
+        
         # segmentation
+        start = time.time()
         self.sam_predictor.set_image(image_source)
         H, W, _ = image_source.shape
         boxes_xyxy = box_ops.box_cxcywh_to_xyxy(boxes) * torch.Tensor([W, H, W, H])
@@ -88,11 +90,14 @@ class GroundingDINO_Vision(VisionBase):
                     boxes = transformed_boxes,
                     multimask_output = False,
                 )
+        print("Segmentation time(s) :", time.time() - start)        
         
+        start = time.time()
         obb_pred = []
         for i in range(masks.shape[0]):
             obb = self.get_oriented_bounding_box(masks[i][0])
             obb_pred.append([phrases[i], logits[i].tolist(), boxes_xyxy[i].tolist(), obb])
+        print("Obb calculation time(s) :", time.time() - start)
 
         return obb_pred
         
