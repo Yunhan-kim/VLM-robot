@@ -55,8 +55,8 @@ class LLMBase:
 
     def prompt_llm(self, prompt: str):
         response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7
+            model = self.model_name,
+            messages = [{"role": "user", "content": prompt}],
+            temperature = 0.7
         )
         return response.choices[0].message.content
