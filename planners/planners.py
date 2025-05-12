@@ -4,6 +4,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import json
 import yaml
+import re
 
 import numpy as np
 import cv2
@@ -100,8 +101,9 @@ class VLMPlanner(LLMBase):
         
         plan, reasoning = None, None
 
-        llm_output = self.prompt_llm(planning_prompt)                
-        llm_output = json.loads(llm_output.strip('```json\n').strip('```'))
+        llm_output = self.prompt_llm(planning_prompt)
+        llm_output = re.search(r'\{.*\}', llm_output, re.DOTALL).group(0)
+        llm_output = json.loads(llm_output)                
 
         plan = llm_output['Full Plan']
         reasoning = llm_output["Reasoning"]
