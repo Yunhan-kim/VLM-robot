@@ -12,6 +12,21 @@ import matplotlib.cm as cm
 
 import streamlit as st
 from PIL import Image
+from datetime import datetime
+
+# --------- Utils ---------
+def initialize_session_state():
+    defaults = {
+        "chat_history": [],
+        "image_input": None,
+        "processed_image": None,
+        "image_processing": False,
+        "env_desc": None,
+        "prev_image_path": None,
+    }
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
 
 def get_color_for_object(index):
     """
@@ -151,76 +166,68 @@ def chat_with_llm(history, message, env_desc):
 
     return history
 
-# Streamlit 인터페이스 설정
+def message(text, is_user=False):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    bot_icon = "🤖"    
+    if is_user:        
+        st.write(f'<div style="text-align: right; margin-bottom: 10px;">'
+                 f'<div style="display: inline-block; background-color: #DCF8C6; padding: 10px; border-radius: 15px; max-width: 60%; word-wrap: break-word;">{text}</div><br>'
+                 f'<span style="font-size: 0.7em; color: #888;">{timestamp}</span></div>', unsafe_allow_html=True)
+    else:        
+        st.write(f'<div style="text-align: left; margin-bottom: 10px;">'
+                 f'<div style="font-weight: bold; color: #00796B; font-size: 1.1em;">{bot_icon} Bot</div>'
+                 f'<div style="display: inline-block; background-color: #E0F7FA; padding: 10px; border-radius: 15px; max-width: 60%; word-wrap: break-word;">'
+                 f'{text}</div><br>'
+                 f'<span style="font-size: 0.7em; color: #888;">{timestamp}</span></div>', unsafe_allow_html=True)
+
+# ----- Start Streamlit App -----
 st.title("🤖📦 VLM-Based Pick & Place 🛠️")
 
-with st.container():
-    col1, col2 = st.columns([1, 1])
+initialize_session_state()
+
+with st.sidebar:
+    st.subheader("Upload an Image")
+    image_input = st.file_uploader("Upload an Image", type=["png", "jpg", "jpeg"])
     
-    # 첫 번째 컬럼 (채팅)
-    with col1:
-        st.subheader("Chatbot")        
-        
-        if "chat_history" not in st.session_state:
-            st.session_state.chat_history = []
-        
-        user_input = st.text_input("Type your message...")
+    if image_input:
+        if image_input != st.session_state.image_input:
+            st.session_state.image_input = image_input
+            image = Image.open(image_input)
+            st.image(image, caption="Uploaded Image", use_container_width=True)
 
-        if st.button("Send"):
-            # 채팅 메시지 처리 후 상태 업데이트
-            st.session_state.chat_history = chat_with_llm(st.session_state.chat_history, user_input, st.session_state.env_desc)
-            # 이미지 처리 방지 (Send 버튼 클릭 후)
-            st.session_state.image_processing = False     
-        
-        # 채팅 내역 출력
-        for entry in reversed(st.session_state.chat_history):
-            st.markdown(f'<div style="background-color: #FFF9C4; padding: 10px; border-radius: 15px; margin-bottom: 10px; max-width: 80%; margin-left: auto; margin-right: 0;"><strong>You:</strong> {entry["user_message"]}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div style="background-color: #D1E7FF; padding: 10px; border-radius: 15px; margin-bottom: 10px; max-width: 80%;"><strong>🤖 Bot:</strong> {entry["bot_message"]}</div>', unsafe_allow_html=True)
-            if entry["reasoning"]:
-                st.markdown(f'<div style="background-color: #F1F1F1; padding: 10px; font-size: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #ddd;"><em>Reasoning:</em> {entry["reasoning"]}</div>', unsafe_allow_html=True)
-            st.markdown("---")
-
-    # 두 번째 컬럼 (이미지 업로드 및 처리)
-    with col2:
-        st.subheader("Upload an Image")
-        
-        # 이미지 처리 상태 관리
-        if "image_input" not in st.session_state:
-            st.session_state.image_input = None
-        if "processed_image" not in st.session_state:
-            st.session_state.processed_image = None  # 처음엔 처리된 이미지가 없음
-        if "image_processing" not in st.session_state:
-            st.session_state.image_processing = False  # 초기에는 처리 중이지 않음
-        
-        # 파일 업로드
-        image_input = st.file_uploader("Upload an Image", type=["png", "jpg", "jpeg"])
-        image_placeholder = st.empty()  # 이미지가 업로드되기 전의 빈 공간 할당
-        
-        if image_input:
-            # 새로운 이미지가 업로드된 경우
-            if image_input != st.session_state.image_input:
-                # 이미지가 바뀌었을 때만 처리
-                st.session_state.image_input = image_input  # 업로드된 이미지를 session_state에 저장
-                image = Image.open(image_input)  # 이미지 열기
-                image_placeholder.image(image, caption="Uploaded Image", use_container_width=True)  # 원본 이미지 표시
-                
-                # 이미지 처리
-                st.session_state.image_processing = True  # 이미지 처리 시작
-                processed_image, obb_results = process_image(image_input, image)
-                if processed_image:
-                    st.session_state.processed_image = processed_image  # 처리된 이미지를 저장
-                    st.session_state.env_desc = obb_results  # 환경 설명 저장
-                    st.image(processed_image, caption="Processed Image", use_container_width=True)  # 처리된 이미지 표시
-                st.session_state.image_processing = False  # 처리 완료 후 처리 중지
-            else:
-                # 이전에 업로드된 이미지가 있는 경우
-                image = Image.open(st.session_state.image_input)
-                image_placeholder.image(image, caption="Uploaded Image", use_container_width=True)  # 원본 이미지 표시
-                
-                # 처리된 이미지가 있는 경우
-                if st.session_state.processed_image:
-                    st.image(st.session_state.processed_image, caption="Processed Image", use_container_width=True)  # 처리된 이미지 표시
+            processed_image, obb_results = process_image(image_input, image)
+            if processed_image:
+                st.session_state.processed_image = processed_image
+                st.session_state.env_desc = obb_results
+                st.image(processed_image, caption="Processed Image", use_container_width=True)
         else:
-            # 이미지가 업로드되지 않은 경우
-            image_placeholder.text("No image uploaded yet.")
-            st.session_state.env_desc = None
+            image = Image.open(st.session_state.image_input)
+            st.image(image, caption="Uploaded Image", use_container_width=True)
+            if st.session_state.processed_image:
+                st.image(st.session_state.processed_image, caption="Processed Image", use_container_width=True)
+    else:
+        st.text("No image uploaded yet.")
+        st.session_state.env_desc = None
+
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+
+for entry in st.session_state.chat_history:
+    if entry["user_message"]:                
+        message(entry["user_message"], is_user=True)
+    if entry["bot_message"]:                    
+        message(entry["bot_message"])
+        if entry.get("reasoning"):            
+            st.markdown(f'<div style="background-color: #F1F1F1; padding: 10px; border-radius: 10px;">'
+                f'<em>Reasoning:</em> {entry["reasoning"]}</div>', unsafe_allow_html=True)
+
+# 채팅 입력 받기
+user_input = st.chat_input("Type your message...")
+
+if user_input:
+    st.session_state.chat_history = chat_with_llm(
+        st.session_state.chat_history,
+        user_input,
+        st.session_state.env_desc
+    )
+    st.rerun()
