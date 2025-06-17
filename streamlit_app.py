@@ -122,7 +122,7 @@ def process_image(image_input, image):
     image_np = np.array(image)
     
     vision_base = GroundingDINO_Vision(device = 'cuda')
-    obb_results = vision_base.obb_predict(image_input, text_prompt = "yellow.green.red.")    
+    obb_results = vision_base.obb_predict(image_input, text_prompt = "yellowblock. redblock. greenblock. blueblock", text_threshold = 0.4)
     # vision_base = YOLOWorld_Vision(device = 'cuda')
     # obb_results = vision_base.obb_predict(image_input, text_prompt = ["yellow", "green", "red"])
 
