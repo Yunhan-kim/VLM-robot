@@ -14,6 +14,8 @@ from pathlib import Path
 from utils.llm_util import LLMBase
 from utils.io_util import load_txt
 
+Z_default = 530.0  # **** z (mm): 캘리브레이션 할 때마다 확인 **** #
+
 class VLMPlanner(LLMBase):
     """LLM TAMP Planner"""
 
@@ -40,13 +42,42 @@ class VLMPlanner(LLMBase):
         for i in range(len(env_desc)):
             target_obj = env_desc[i][0]
             target_obb = env_desc[i][3]            
-            target_obb_cal = self.calibration(list(target_obb[0][0]), z = 530.0)  # **** z (mm): 캘리브레이션 할 때마다 확인 **** #
+            target_c = target_obb[0][0]
+            world_center = self.calibration(target_c, z = Z_default)
+            world_center = np.round(world_center, 3)
             target_size = target_obb[0][1]
             target_angle = target_obb[0][2]            
             if target_size[0] >= target_size[1]:
                 target_angle = -(90 - target_angle)
             target_angle = target_angle - 135 # **** Ready pose에서의 그리퍼 회전 각도 확인 **** #
-            domain_desc += '   - **{}**: Position {} (x, y), Angle {}\n'.format(target_obj, str(target_obb_cal[0:2].tolist()), target_angle)
+            target_angle = round(target_angle, 3)
+
+            # 중심점
+            angle_rad_0 = np.deg2rad(90 - target_obb[0][2])
+            angle_rad_1 = np.deg2rad(180 - target_obb[0][2])
+
+            # width/2, height/2 방향의 끝점 (픽셀 좌표계)
+            d0 = target_size[0] / 2
+            d1 = target_size[1] / 2
+            d0_vec = [target_c[0] + d1 * np.cos(angle_rad_0), target_c[1] - d1 * np.sin(angle_rad_0)]
+            d1_vec = [target_c[0] - d0 * np.cos(angle_rad_1), target_c[1] + d0 * np.sin(angle_rad_1)]
+
+            # calibration (z는 원래 쓰던 값 사용)            
+            world_d0 = self.calibration(d0_vec, z = Z_default)
+            world_d1 = self.calibration(d1_vec, z = Z_default)
+
+            # 실제 길이 계산
+            size_0 = np.linalg.norm(world_center - world_d0)
+            size_1 = np.linalg.norm(world_center - world_d1)
+
+            target_size_m = [round(2 * size_0, 3), round(2 * size_1, 3)]
+
+            domain_desc += '   - **{}**: Position {} (x, y), Angle {}, Size {}\n'.format(
+                target_obj,
+                str(world_center[0:2].tolist()),
+                target_angle,
+                target_size_m
+            )
         return domain_desc            
 
     def calibration(self, img_point: list, z = 470.0): # 원하는 월드 좌표의 z값 (평면인 경우 고정, mm)
