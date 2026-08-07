@@ -8,8 +8,8 @@ import cv2
 import numpy as np
 from pathlib import Path
 
-from groundingdino.util.inference import load_model, load_image, predict
-from groundingdino.util import box_ops
+from PIL import Image
+from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 
 import supervision as sv
 from inference.models.yolo_world.yolo_world import YOLOWorld
@@ -54,35 +54,38 @@ class VisionBase:
 class GroundingDINO_Vision(VisionBase):
     def __init__(self, device = 'cpu'):
         self.device = device
-        self.groundingdino_model = self.load_groundingdino()
+        self.gd_processor, self.groundingdino_model = self.load_groundingdino()
         self.sam_predictor = self.load_sam()    
 
     def load_groundingdino(self):
-        groundingdino_folder = Path(__file__).resolve().parent.parent / "checkpoints"    
-        groundingdino_checkpoint = groundingdino_folder / "groundingdino_swinb_cogcoor.pth"
-        groundingdino_cfg = groundingdino_folder / "GroundingDINO_SwinB_cfg.py"
-        model = load_model(groundingdino_cfg, groundingdino_checkpoint)        
-        return model        
+        GD_MODEL_ID = "IDEA-Research/grounding-dino-base"
+        processor = AutoProcessor.from_pretrained(GD_MODEL_ID)
+        model = AutoModelForZeroShotObjectDetection.from_pretrained(GD_MODEL_ID)
+        return processor, model.to(self.device).eval()
     
     def obb_predict(self, image_path, text_prompt, box_threshold = 0.4, text_threshold = 0.5):                
         # bounding box
         start = time.time()
-        image_source, image = load_image(image_path)
-        boxes, logits, phrases = predict(
-            model = self.groundingdino_model, 
-            image = image, 
-            caption = text_prompt, 
-            box_threshold = box_threshold, 
-            text_threshold = text_threshold,
-            device = self.device
-            )
+        image_source = np.array(Image.open(image_path).convert("RGB"))
+        caption = text_prompt.strip().lower()
+        if not caption.endswith("."):
+            caption += "."
+        inputs = self.gd_processor(images=image_source, text=caption,
+                                   return_tensors="pt").to(self.device)
+        with torch.no_grad():
+            outputs = self.groundingdino_model(**inputs)
+        result = self.gd_processor.post_process_grounded_object_detection(
+            outputs, inputs["input_ids"],
+            box_threshold=box_threshold, text_threshold=text_threshold,
+            target_sizes=[image_source.shape[:2]])[0]
+        boxes_xyxy = result["boxes"].cpu()
+        logits = result["scores"].cpu()
+        phrases = result["labels"]
         print("Object detection time(s) :", time.time() - start)
         
         # segmentation
         start = time.time()
-        self.sam_predictor.set_image(image_source)
-        H, W, _ = image_source.shape
-        boxes_xyxy = box_ops.box_cxcywh_to_xyxy(boxes) * torch.Tensor([W, H, W, H])
+        self.sam_predictor.set_image(image_source)        
         transformed_boxes = self.sam_predictor.transform.apply_boxes_torch(boxes_xyxy, image_source.shape[:2]).to(self.device)
         masks, _, _ = self.sam_predictor.predict_torch(
                     point_coords = None,
@@ -111,7 +114,7 @@ class YOLOWorld_Vision(VisionBase):
         import time
         start = time.time()
         # bounding box
-        image_source, image = load_image(image_path)
+        image_source = np.array(Image.open(image_path).convert("RGB"))
 
         results = self.model.infer(image_source, text=text_prompt, confidence=confidence)
         detections = sv.Detections.from_inference(results)
