@@ -1,5 +1,5 @@
-from MobileSAM.tiny_vit_sam import TinyViT
-from segment_anything.modeling import MaskDecoder, PromptEncoder, Sam, TwoWayTransformer
+from EfficientSAM.MobileSAM.tiny_vit_sam import TinyViT
+from segment_anything.segment_anything.modeling import MaskDecoder, PromptEncoder, Sam, TwoWayTransformer
 
 def setup_model():
     prompt_embed_dim = 256

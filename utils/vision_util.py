@@ -14,14 +14,16 @@ from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 import supervision as sv
 from inference.models.yolo_world.yolo_world import YOLOWorld
 
-from segment_anything.segment_anything import build_sam, SamPredictor
+from segment_anything.segment_anything import SamPredictor
+from EfficientSAM.MobileSAM.setup_mobile_sam import setup_model
 
 
 class VisionBase:
     def load_sam(self):
-        sam_folder = Path(__file__).resolve().parent.parent / "checkpoints"    
-        sam_checkpoint = sam_folder / "sam_vit_h_4b8939.pth"
-        sam = build_sam(checkpoint=sam_checkpoint)
+        sam_folder = Path(__file__).resolve().parent.parent / "checkpoints"
+        sam_checkpoint = sam_folder / "mobile_sam.pt"
+        sam = setup_model()
+        sam.load_state_dict(torch.load(sam_checkpoint), strict=True)
         sam.to(device = self.device)
         sam_predictor = SamPredictor(sam)
         return sam_predictor    
