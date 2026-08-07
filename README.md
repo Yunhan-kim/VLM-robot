@@ -50,13 +50,13 @@
 
 ### Step 2: Download the Pretrained Weights
 
-In this step, you'll download the pretrained weights for the Grounding DINO model to initialize it properly.
+In this step, you'll download the pretrained weights for MobileSAM.
+Grounding DINO is loaded from the HuggingFace Hub automatically
+(`IDEA-Research/grounding-dino-base`), so no manual download is needed.
 
 **Files to Download:**
 
-- `groundingdino_swinb_cogcoor.pth`: The pretrained weights for the Swin-B based version of the Grounding DINO model.
-- `GroundingDINO_SwinB_cfg.py`: The configuration file defining the model's settings and hyperparameters.
-- `sam_vit_h_4b8939.pth`: The pretrained weights for the Segment Anything Model (SAM) using the ViT-H architecture.
+- `mobile_sam.pt`: The pretrained weights for MobileSAM (TinyViT encoder, 40MB).
 
 **Download Instructions:**
 
@@ -65,13 +65,11 @@ In this step, you'll download the pretrained weights for the Grounding DINO mode
    mkdir -p checkpoints
    ```
 
-2. **Download the Weight Files:**
+2. **Download the Weight File:**
     ```bash
      cd checkpoints
 
-     wget https://github.com/IDEA-Research/GroundingDINO/releases/download/v0.1.0-alpha2/groundingdino_swinb_cogcoor.pth
-     wget https://raw.githubusercontent.com/IDEA-Research/GroundingDINO/refs/heads/main/groundingdino/config/GroundingDINO_SwinB_cfg.py
-     wget https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth
+     wget https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt
      ```
 
 ### Step 3: Camera Calibration
