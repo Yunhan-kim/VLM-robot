@@ -17,6 +17,7 @@ from inference.models.yolo_world.yolo_world import YOLOWorld
 from segment_anything.segment_anything import SamPredictor
 from EfficientSAM.MobileSAM.setup_mobile_sam import setup_model
 
+from .llm_util import VLMBase
 
 class VisionBase:
     def load_sam(self):
@@ -57,7 +58,8 @@ class GroundingDINO_Vision(VisionBase):
     def __init__(self, device = 'cpu'):
         self.device = device
         self.gd_processor, self.groundingdino_model = self.load_groundingdino()
-        self.sam_predictor = self.load_sam()    
+        self.sam_predictor = self.load_sam()
+        self._vlm = None
 
     def load_groundingdino(self):
         GD_MODEL_ID = "IDEA-Research/grounding-dino-base"
@@ -65,7 +67,16 @@ class GroundingDINO_Vision(VisionBase):
         model = AutoModelForZeroShotObjectDetection.from_pretrained(GD_MODEL_ID)
         return processor, model.to(self.device).eval()
     
-    def obb_predict(self, image_path, text_prompt, box_threshold = 0.4, text_threshold = 0.5):                
+    def _vlm_label(self, image_source, mask):
+        if self._vlm is None:
+            self._vlm = VLMBase()
+        masked_img = image_source * mask.cpu().numpy()[:, :, np.newaxis]
+        return self._vlm.prompt_with_masked_image(
+            "Describe this object with a short noun phrase only. No sentences, no explanation.",
+            masked_img
+        )
+    
+    def obb_predict(self, image_path, text_prompt, box_threshold = 0.4, text_threshold = 0.5, vlm_label = False):                
         # bounding box
         start = time.time()
         image_source = np.array(Image.open(image_path).convert("RGB"))
@@ -100,11 +111,12 @@ class GroundingDINO_Vision(VisionBase):
         start = time.time()
         obb_pred = []
         for i in range(masks.shape[0]):
+            label = self._vlm_label(image_source, masks[i][0]) if vlm_label else phrases[i]
             obb = self.get_oriented_bounding_box(masks[i][0])
-            obb_pred.append([phrases[i], logits[i].tolist(), boxes_xyxy[i].tolist(), obb])
+            obb_pred.append([label, logits[i].tolist(), boxes_xyxy[i].tolist(), obb])
         print("Obb calculation time(s) :", time.time() - start)
 
-        return obb_pred
+        return obb_pred       
         
 class YOLOWorld_Vision(VisionBase):
     def __init__(self, device = 'cpu'):
