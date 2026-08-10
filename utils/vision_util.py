@@ -76,7 +76,7 @@ class GroundingDINO_Vision(VisionBase):
             masked_img
         )
     
-    def obb_predict(self, image_path, text_prompt, box_threshold = 0.4, text_threshold = 0.5, vlm_label = False):                
+    def obb_predict(self, image_path, text_prompt, threshold = 0.4, text_threshold = 0.5, vlm_label = False):                
         # bounding box
         start = time.time()
         image_source = np.array(Image.open(image_path).convert("RGB"))
@@ -89,7 +89,7 @@ class GroundingDINO_Vision(VisionBase):
             outputs = self.groundingdino_model(**inputs)
         result = self.gd_processor.post_process_grounded_object_detection(
             outputs, inputs["input_ids"],
-            box_threshold=box_threshold, text_threshold=text_threshold,
+            threshold=threshold, text_threshold=text_threshold,
             target_sizes=[image_source.shape[:2]])[0]
         boxes_xyxy = result["boxes"].cpu()
         logits = result["scores"].cpu()
